@@ -56,27 +56,27 @@ def render_selection_view(audits: list[dict]) -> None:
     with tab_sel:
         if not audits:
             st.warning("Nessun audit disponibile. Creane uno nuovo.")
-            return
-        chosen = st.selectbox(
-            "Scegli un audit:",
-            options=[a["nome_audit"] for a in audits],
-            key="select_audit",
-        )
-        if st.button("Apri Audit", key="btn_open"):
-            st.session_state.active_audit = chosen
-            st.rerun()
+        else:
+            chosen = st.selectbox(
+                "Scegli un audit:",
+                options=[a["nome_audit"] for a in audits],
+                key="select_audit",
+            )
+            if st.button("Apri Audit", key="btn_open"):
+                st.session_state.active_audit = chosen
+                st.rerun()
 
     # ── Create new ─────────────────────────────────────────────────────
     with tab_new:
         nome = st.text_input("Nome Audit", key="new_audit_name")
-        data = st.date_input("Data Audit", key="new_audit_date")
 
         if st.button("Avvia Ingest", key="btn_ingest"):
             if not nome.strip():
                 st.error("Il nome dell'audit è obbligatorio.")
                 return
 
-            _run_ingest(nome.strip(), data.strftime("%Y-%m-%d"))
+            from datetime import date
+            _run_ingest(nome.strip(), date.today().strftime("%Y-%m-%d"))
 
 
 def _run_ingest(nome: str, data: str) -> None:
