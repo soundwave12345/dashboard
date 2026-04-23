@@ -101,7 +101,7 @@ def _run_ingest(nome: str, data: str) -> None:
         # Real subprocess execution
         try:
             proc = subprocess.Popen(
-                [sys.executable, ingest_script, nome, data, dir_path],
+                [sys.executable, ingest_script, "--all", "--db", nome, "--project-dir", dir_path],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
