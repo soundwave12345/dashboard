@@ -15,29 +15,22 @@ from db_manager import (
 
 # ── Sidebar ────────────────────────────────────────────────────────────────
 
-def render_sidebar(audits: list[dict]) -> None:
+def render_sidebar(audits: list[dict], sidebar_top) -> None:
     """Render the dynamic sidebar."""
-    with st.sidebar:
-        if not st.session_state.get("active_audit"):
+    if not st.session_state.get("active_audit"):
+        with sidebar_top:
             st.title("Audit Manager")
-            st.subheader("Audit esistenti")
-            if not audits:
-                st.info("Nessun audit trovato.")
-            else:
-                for a in audits:
-                    st.markdown(
-                        f"- **{a['nome_audit']}**  "
-                        f"_{a['data_creazione']}_"
-                    )
+        st.sidebar.subheader("Audit esistenti")
+        if not audits:
+            st.sidebar.info("Nessun audit trovato.")
         else:
-            # Render above the native nav using CSS order trick
-            st.markdown(
-                "<style>"
-                "[data-testid='stSidebarNav'] { order: 2; }"
-                ".stSidebar [data-testid='stSidebarUserContent'] > div:first-child { order: -1; }"
-                "</style>",
-                unsafe_allow_html=True,
-            )
+            for a in audits:
+                st.sidebar.markdown(
+                    f"- **{a['nome_audit']}**  "
+                    f"_{a['data_creazione']}_"
+                )
+    else:
+        with sidebar_top:
             st.markdown(
                 f"**Audit attivo:**  "
                 f"<span style='color:#00b4d8;font-size:1.1em'>"

@@ -22,7 +22,8 @@ elif st.session_state.active_audit:
 audits = list_audits()
 
 # ── Sidebar ────────────────────────────────────────────────────────────────
-render_sidebar(audits)
+sidebar_top = st.sidebar.container()
+render_sidebar(audits, sidebar_top)
 
 # ── Routing ────────────────────────────────────────────────────────────────
 if not st.session_state.active_audit:
