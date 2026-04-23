@@ -42,6 +42,12 @@ def render_sidebar(audits: list[dict]) -> None:
                     del st.query_params["audit"]
                 st.rerun()
 
+            st.divider()
+            if st.button("Applications", use_container_width=True):
+                st.switch_page("pages/applications.py")
+            if st.button("Servers", use_container_width=True):
+                st.switch_page("pages/servers.py")
+
 
 # ── Audit Selection / Creation ────────────────────────────────────────────
 

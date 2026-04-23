@@ -5,7 +5,13 @@ import streamlit as st
 from db_manager import list_audits
 from ui_components import render_sidebar
 
-st.set_page_config(page_title="Audit Dashboard", layout="wide")
+st.set_page_config(page_title="Audit Dashboard", layout="wide", initial_sidebar_state="expanded")
+
+# Hide Streamlit's default sidebar navigation
+st.markdown(
+    "<style>[data-testid='stSidebarNav'] { display: none; }</style>",
+    unsafe_allow_html=True,
+)
 
 # ── Restore session from query params (survives refresh) ───────────────────
 if "active_audit" not in st.session_state:
