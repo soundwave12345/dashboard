@@ -7,9 +7,16 @@ from ui_components import render_sidebar
 
 st.set_page_config(page_title="Audit Dashboard", layout="wide")
 
-# ── Initialise session state ───────────────────────────────────────────────
+# ── Restore session from query params (survives refresh) ───────────────────
 if "active_audit" not in st.session_state:
-    st.session_state.active_audit = None
+    qp = st.query_params.get("audit")
+    if qp:
+        st.session_state.active_audit = qp
+    else:
+        st.session_state.active_audit = None
+elif st.session_state.active_audit:
+    # Keep query params in sync
+    st.query_params["audit"] = st.session_state.active_audit
 
 # ── Load data ──────────────────────────────────────────────────────────────
 audits = list_audits()

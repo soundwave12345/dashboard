@@ -18,20 +18,8 @@ from db_manager import (
 def render_sidebar(audits: list[dict]) -> None:
     """Render the dynamic sidebar."""
     with st.sidebar:
-        st.title("Audit Manager")
-
-        if st.session_state.get("active_audit"):
-            st.markdown(
-                f"**Audit attivo:**  \n"
-                f"<span style='color:#00b4d8;font-size:1.1em'>"
-                f"{st.session_state.active_audit}</span>",
-                unsafe_allow_html=True,
-            )
-            st.divider()
-            if st.button("⬅ Torna alla Selezione"):
-                st.session_state.active_audit = None
-                st.rerun()
-        else:
+        if not st.session_state.get("active_audit"):
+            st.title("Audit Manager")
             st.subheader("Audit esistenti")
             if not audits:
                 st.info("Nessun audit trovato.")
@@ -41,6 +29,21 @@ def render_sidebar(audits: list[dict]) -> None:
                         f"- **{a['nome_audit']}**  "
                         f"_{a['data_creazione']}_"
                     )
+        else:
+            # Push info and button to the bottom
+            st.markdown("")  # spacer
+            st.markdown(
+                f"<div style='position:fixed; bottom:2rem; left:0; width:inherit; "
+                f"padding:0 1rem;'>"
+                f"<span style='color:#00b4d8;font-size:1.1em'>"
+                f"{st.session_state.active_audit}</span>",
+                unsafe_allow_html=True,
+            )
+            if st.button("⬅ Torna alla Selezione"):
+                st.session_state.active_audit = None
+                if "audit" in st.query_params:
+                    del st.query_params["audit"]
+                st.rerun()
 
 
 # ── Audit Selection / Creation ────────────────────────────────────────────
@@ -63,6 +66,7 @@ def render_selection_view(audits: list[dict]) -> None:
             )
             if st.button("Apri Audit", key="btn_open"):
                 st.session_state.active_audit = chosen
+                st.query_params["audit"] = chosen
                 st.rerun()
 
     # ── Create new ─────────────────────────────────────────────────────
@@ -127,6 +131,7 @@ def _run_ingest(nome: str, data: str) -> None:
 
     st.success(f"Audit '{nome}' creato con successo!")
     st.session_state.active_audit = nome
+    st.query_params["audit"] = nome
     st.rerun()
 
 
