@@ -157,12 +157,10 @@ def get_findings_by_category(db_path: str) -> list[dict]:
     return [dict(r) for r in rows]
 
 
-def get_findings_by_severity(db_path: str) -> list[dict]:
-    """Return (severity, count) pairs."""
+def get_all_findings(db_path: str) -> list[dict]:
+    """Return all rows from the findings table."""
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
-    rows = conn.execute(
-        "SELECT severity, COUNT(*) as count FROM findings GROUP BY severity"
-    ).fetchall()
+    rows = conn.execute("SELECT * FROM findings").fetchall()
     conn.close()
     return [dict(r) for r in rows]
