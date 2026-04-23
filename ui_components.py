@@ -30,6 +30,14 @@ def render_sidebar(audits: list[dict]) -> None:
                         f"_{a['data_creazione']}_"
                     )
         else:
+            # Render above the native nav using CSS order trick
+            st.markdown(
+                "<style>"
+                "[data-testid='stSidebarNav'] { order: 2; }"
+                ".stSidebar [data-testid='stSidebarUserContent'] > div:first-child { order: -1; }"
+                "</style>",
+                unsafe_allow_html=True,
+            )
             st.markdown(
                 f"**Audit attivo:**  "
                 f"<span style='color:#00b4d8;font-size:1.1em'>"
@@ -41,12 +49,6 @@ def render_sidebar(audits: list[dict]) -> None:
                 if "audit" in st.query_params:
                     del st.query_params["audit"]
                 st.rerun()
-
-            st.divider()
-            if st.button("Applications", use_container_width=True):
-                st.switch_page("pages/applications.py")
-            if st.button("Servers", use_container_width=True):
-                st.switch_page("pages/servers.py")
 
 
 # ── Audit Selection / Creation ────────────────────────────────────────────
