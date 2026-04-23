@@ -28,19 +28,6 @@ def render_sidebar(audits: list[dict]) -> None:
                 unsafe_allow_html=True,
             )
             st.divider()
-
-            # DORA_RELEVANCE filter
-            dora_values = st.session_state.get("dora_unique_values", [])
-            if dora_values:
-                selected = st.multiselect(
-                    "Filtra per DORA_RELEVANCE",
-                    options=dora_values,
-                    default=dora_values,
-                    key="dora_filter",
-                )
-                st.session_state.dora_selected = selected
-
-            st.divider()
             if st.button("⬅ Torna alla Selezione"):
                 st.session_state.active_audit = None
                 st.rerun()
@@ -151,26 +138,25 @@ def ingest_available(path: str) -> bool:
 
 # ── Audit Dashboard ────────────────────────────────────────────────────────
 
-
 def render_audit_dashboard(db_path: str, nome: str) -> None:
     """Show a data table with all findings from the audit database."""
     st.header(f"Dashboard — {nome}")
 
     data = get_all_findings(db_path)
 
-    # Populate DORA_RELEVANCE filter values
-    if data and "DORA_RELEVANCE" in data[0]:
-        dora_unique = sorted(set(str(r["DORA_RELEVANCE"]) for r in data))
-        if "dora_unique_values" not in st.session_state or st.session_state.dora_unique_values != dora_unique:
-            st.session_state.dora_unique_values = dora_unique
-            st.session_state.dora_selected = dora_unique
-
-    if data:
-        # Apply DORA_RELEVANCE filter
-        selected = st.session_state.get("dora_selected")
-        if selected and "DORA_RELEVANCE" in data[0]:
-            data = [r for r in data if str(r["DORA_RELEVANCE"]) in selected]
-
-        st.dataframe(data, use_container_width=True, hide_index=True)
-    else:
+    if not data:
         st.info("Nessun dato disponibile nel database.")
+        return
+
+    # DORA_RELEVANCE filter
+    if "DORA_RELEVANCE" in data[0]:
+        dora_unique = sorted(set(str(r["DORA_RELEVANCE"]) for r in data))
+        selected = st.multiselect(
+            "Filtra per DORA_RELEVANCE",
+            options=dora_unique,
+            default=dora_unique,
+            key="dora_filter",
+        )
+        data = [r for r in data if str(r["DORA_RELEVANCE"]) in selected]
+
+    st.dataframe(data, use_container_width=True, hide_index=True)
