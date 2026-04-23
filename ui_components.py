@@ -30,11 +30,6 @@ def render_sidebar(audits: list[dict]) -> None:
                         f"_{a['data_creazione']}_"
                     )
         else:
-            # Spacer to push content to bottom
-            st.markdown(
-                "<div style='height: 70vh;'></div>",
-                unsafe_allow_html=True,
-            )
             st.markdown(
                 f"**Audit attivo:**  "
                 f"<span style='color:#00b4d8;font-size:1.1em'>"
