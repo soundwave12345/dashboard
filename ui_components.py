@@ -95,14 +95,10 @@ def _render_create_tab() -> None:
             ui.notify("Il nome dell'audit è obbligatorio.", type="warning")
             return
 
-        # Open floating log dialog immediately
-        with ui.dialog().props("persistent") as dialog, ui.card().classes("w-[600px]"):
-            ui.label(f"Ingest — {nome}").classes("text-h6")
+        # Persistent notification for log output
+        with ui.notification(timeout=None, close_btn=False) as notif:
+            ui.label(f"Ingest — {nome}").classes("text-h6 q-mb-sm")
             log_area = ui.log().classes("w-full h-[300px]")
-            close_btn = ui.button("Chiudi")
-            close_btn.set_visibility(False)
-
-        dialog.open()
 
         # Create directories
         try:
@@ -111,40 +107,34 @@ def _render_create_tab() -> None:
             log_area.push(f"[OK] Database: {db_path}")
         except FileExistsError as exc:
             log_area.push(f"[ERRORE] {exc}")
-            close_btn.set_visibility(True)
             return
         except Exception as exc:
             log_area.push(f"[ERRORE] Creazione directory fallita: {exc}")
-            close_btn.set_visibility(True)
             return
 
-        # Run ingest script async
-        ingest_script = "ingest/ingest.py"
-        if not os.path.isfile(ingest_script):
-            log_area.push(f"[WARN] ingest.py non trovato – simulazione per '{nome}'.")
-        else:
-            log_area.push(f"[INGEST] Avvio script: {ingest_script}")
-            try:
-                proc = await asyncio.create_subprocess_exec(
-                    sys.executable, ingest_script,
-                    "--all", "--db", nome, "--project-dir", dir_path,
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.STDOUT,
-                )
-                while True:
-                    line = await proc.stdout.readline()
-                    if not line:
-                        break
-                    log_area.push(line.decode().rstrip())
-                await proc.wait()
-                if proc.returncode != 0:
-                    log_area.push(f"[ERRORE] Ingest terminato con codice {proc.returncode}.")
-                    close_btn.set_visibility(True)
-                    return
-            except Exception as exc:
-                log_area.push(f"[ERRORE] Esecuzione ingest: {exc}")
-                close_btn.set_visibility(True)
+        # Run ingest script as Python module
+        ingest_script = "ingest.ingest"
+        log_area.push(f"[INGEST] Avvio script: ingest/ingest.py")
+
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                sys.executable, "-u", "-m", ingest_script,
+                "--all", "--db", nome, "--project-dir", dir_path,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.STDOUT,
+            )
+            while True:
+                line = await proc.stdout.readline()
+                if not line:
+                    break
+                log_area.push(line.decode().rstrip())
+            await proc.wait()
+            if proc.returncode != 0:
+                log_area.push(f"[ERRORE] Ingest terminato con codice {proc.returncode}.")
                 return
+        except Exception as exc:
+            log_area.push(f"[ERRORE] Esecuzione ingest: {exc}")
+            return
 
         # Register and seed
         try:
@@ -152,20 +142,17 @@ def _render_create_tab() -> None:
             log_area.push(f"[OK] Audit registrato nel master DB.")
         except ValueError as exc:
             log_area.push(f"[ERRORE] {exc}")
-            close_btn.set_visibility(True)
             return
 
         seed_placeholder_data(db_path)
         log_area.push(f"[OK] Audit '{nome}' creato con successo!")
 
         app.storage.user["active_audit"] = nome
-        close_btn.set_visibility(True)
 
-        async def finish():
-            dialog.close()
-            ui.navigate.to("/")
-
-        close_btn.on_click(finish)
+        # Dismiss notification after a moment and navigate
+        await asyncio.sleep(2)
+        notif.dismiss()
+        ui.navigate.to("/")
 
     ui.button("Avvia Ingest", on_click=start_ingest).props("color=primary")
 
