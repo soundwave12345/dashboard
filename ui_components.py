@@ -95,14 +95,7 @@ def _render_create_tab() -> None:
             ui.notify("Il nome dell'audit è obbligatorio.", type="warning")
             return
 
-        # Create directories
-        try:
-            dir_path, db_path = create_audit_directories(nome)
-        except FileExistsError as exc:
-            ui.notify(str(exc), type="negative")
-            return
-
-        # Floating log dialog
+        # Open floating log dialog immediately
         with ui.dialog().props("persistent") as dialog, ui.card().classes("w-[600px]"):
             ui.label(f"Ingest — {nome}").classes("text-h6")
             log_area = ui.log().classes("w-full h-[300px]")
@@ -111,11 +104,26 @@ def _render_create_tab() -> None:
 
         dialog.open()
 
+        # Create directories
+        try:
+            dir_path, db_path = create_audit_directories(nome)
+            log_area.push(f"[OK] Directory creata: {dir_path}")
+            log_area.push(f"[OK] Database: {db_path}")
+        except FileExistsError as exc:
+            log_area.push(f"[ERRORE] {exc}")
+            close_btn.set_visibility(True)
+            return
+        except Exception as exc:
+            log_area.push(f"[ERRORE] Creazione directory fallita: {exc}")
+            close_btn.set_visibility(True)
+            return
+
         # Run ingest script async
         ingest_script = "ingest/ingest.py"
         if not os.path.isfile(ingest_script):
-            log_area.push(f"[PLACEHOLDER] ingest.py non trovato – simulazione per '{nome}'.")
+            log_area.push(f"[WARN] ingest.py non trovato – simulazione per '{nome}'.")
         else:
+            log_area.push(f"[INGEST] Avvio script: {ingest_script}")
             try:
                 proc = await asyncio.create_subprocess_exec(
                     sys.executable, ingest_script,
@@ -134,13 +142,14 @@ def _render_create_tab() -> None:
                     close_btn.set_visibility(True)
                     return
             except Exception as exc:
-                log_area.push(f"[ERRORE] {exc}")
+                log_area.push(f"[ERRORE] Esecuzione ingest: {exc}")
                 close_btn.set_visibility(True)
                 return
 
         # Register and seed
         try:
             register_audit(nome, dir_path, db_path)
+            log_area.push(f"[OK] Audit registrato nel master DB.")
         except ValueError as exc:
             log_area.push(f"[ERRORE] {exc}")
             close_btn.set_visibility(True)
@@ -148,10 +157,11 @@ def _render_create_tab() -> None:
 
         seed_placeholder_data(db_path)
         log_area.push(f"[OK] Audit '{nome}' creato con successo!")
+
+        app.storage.user["active_audit"] = nome
         close_btn.set_visibility(True)
 
         async def finish():
-            app.storage.user["active_audit"] = nome
             dialog.close()
             ui.navigate.to("/")
 
