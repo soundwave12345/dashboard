@@ -56,10 +56,13 @@ async def _clear_audit():
 
 def render_selection_view() -> None:
     """Tabs for selecting or creating an audit."""
-    with ui.tab_panels().classes("w-full").props("animated") as panels:
-        with ui.tab("Seleziona Audit Esistente"):
+    with ui.tabs().classes("w-full") as tabs:
+        ui.tab("Seleziona", label="Seleziona Audit Esistente")
+        ui.tab("Crea", label="Crea Nuovo Audit")
+    with ui.tab_panels(tabs, value="Seleziona").classes("w-full"):
+        with ui.tab_panel("Seleziona"):
             _render_select_tab()
-        with ui.tab("Crea Nuovo Audit"):
+        with ui.tab_panel("Crea"):
             _render_create_tab()
 
 
