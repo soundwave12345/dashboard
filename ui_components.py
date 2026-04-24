@@ -95,10 +95,14 @@ def _render_create_tab() -> None:
             ui.notify("Il nome dell'audit è obbligatorio.", type="warning")
             return
 
-        # Persistent notification for log output
-        with ui.notification(timeout=None, close_btn=False) as notif:
+        # Floating log dialog
+        with ui.dialog().props("persistent") as dialog, ui.card().classes("w-[600px]"):
             ui.label(f"Ingest — {nome}").classes("text-h6 q-mb-sm")
             log_area = ui.log().classes("w-full h-[300px]")
+            close_btn = ui.button("Chiudi")
+            close_btn.set_visibility(False)
+
+        dialog.open()
 
         # Create directories
         try:
@@ -107,18 +111,20 @@ def _render_create_tab() -> None:
             log_area.push(f"[OK] Database: {db_path}")
         except FileExistsError as exc:
             log_area.push(f"[ERRORE] {exc}")
+            close_btn.set_visibility(True)
             return
         except Exception as exc:
             log_area.push(f"[ERRORE] Creazione directory fallita: {exc}")
+            close_btn.set_visibility(True)
             return
 
-        # Run ingest script as Python module
-        ingest_script = "ingest.ingest"
-        log_area.push(f"[INGEST] Avvio script: ingest/ingest.py")
+        # Run ingest script
+        ingest_script = os.path.join(os.path.dirname(__file__), "ingest", "ingest.py")
+        log_area.push(f"[INGEST] Avvio: python {ingest_script}")
 
         try:
             proc = await asyncio.create_subprocess_exec(
-                sys.executable, "-u", "-m", ingest_script,
+                sys.executable, "-u", ingest_script,
                 "--all", "--db", nome, "--project-dir", dir_path,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.STDOUT,
@@ -131,9 +137,11 @@ def _render_create_tab() -> None:
             await proc.wait()
             if proc.returncode != 0:
                 log_area.push(f"[ERRORE] Ingest terminato con codice {proc.returncode}.")
+                close_btn.set_visibility(True)
                 return
         except Exception as exc:
             log_area.push(f"[ERRORE] Esecuzione ingest: {exc}")
+            close_btn.set_visibility(True)
             return
 
         # Register and seed
@@ -142,17 +150,20 @@ def _render_create_tab() -> None:
             log_area.push(f"[OK] Audit registrato nel master DB.")
         except ValueError as exc:
             log_area.push(f"[ERRORE] {exc}")
+            close_btn.set_visibility(True)
             return
 
         seed_placeholder_data(db_path)
         log_area.push(f"[OK] Audit '{nome}' creato con successo!")
 
         app.storage.user["active_audit"] = nome
+        close_btn.set_visibility(True)
 
-        # Dismiss notification after a moment and navigate
-        await asyncio.sleep(2)
-        notif.dismiss()
-        ui.navigate.to("/")
+        async def finish():
+            dialog.close()
+            ui.navigate.to("/")
+
+        close_btn.on_click(finish)
 
     ui.button("Avvia Ingest", on_click=start_ingest).props("color=primary")
 
