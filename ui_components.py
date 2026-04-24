@@ -120,12 +120,15 @@ def _render_create_tab() -> None:
 
         # Run ingest script
         ingest_script = os.path.join(os.path.dirname(__file__), "ingest", "ingest.py")
-        log_area.push(f"[INGEST] Avvio: python {ingest_script}")
+        cmd = [sys.executable, "-u", ingest_script, "--all", "--db", nome, "--project-dir", dir_path]
+        log_area.push(f"[DEBUG] sys.executable = {sys.executable}")
+        log_area.push(f"[DEBUG] ingest_script = {ingest_script}")
+        log_area.push(f"[DEBUG] script exists = {os.path.isfile(ingest_script)}")
+        log_area.push(f"[DEBUG] comando completo: {' '.join(cmd)}")
 
         try:
             proc = await asyncio.create_subprocess_exec(
-                sys.executable, "-u", ingest_script,
-                "--all", "--db", nome, "--project-dir", dir_path,
+                *cmd,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.STDOUT,
             )
@@ -140,7 +143,10 @@ def _render_create_tab() -> None:
                 close_btn.set_visibility(True)
                 return
         except Exception as exc:
+            import traceback
             log_area.push(f"[ERRORE] Esecuzione ingest: {exc}")
+            for tb_line in traceback.format_exc().splitlines():
+                log_area.push(tb_line)
             close_btn.set_visibility(True)
             return
 
