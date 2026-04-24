@@ -121,23 +121,23 @@ def _render_create_tab() -> None:
         # Run ingest script
         ingest_script = os.path.join(os.path.dirname(__file__), "ingest", "ingest.py")
         cmd = [sys.executable, "-u", ingest_script, "--all", "--db", nome, "--project-dir", dir_path]
-        log_area.push(f"[DEBUG] sys.executable = {sys.executable}")
-        log_area.push(f"[DEBUG] ingest_script = {ingest_script}")
-        log_area.push(f"[DEBUG] script exists = {os.path.isfile(ingest_script)}")
-        log_area.push(f"[DEBUG] comando completo: {' '.join(cmd)}")
+        log_area.push(f"[DEBUG] comando: {' '.join(cmd)}")
 
         try:
-            proc = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.STDOUT,
+            import subprocess
+            proc = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
             )
             while True:
-                line = await proc.stdout.readline()
+                line = proc.stdout.readline()
                 if not line:
                     break
-                log_area.push(line.decode().rstrip())
-            await proc.wait()
+                log_area.push(line.rstrip())
+                await asyncio.sleep(0)  # yield to event loop
+            proc.wait()
             if proc.returncode != 0:
                 log_area.push(f"[ERRORE] Ingest terminato con codice {proc.returncode}.")
                 close_btn.set_visibility(True)
