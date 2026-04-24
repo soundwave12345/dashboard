@@ -1,7 +1,7 @@
 """Reusable UI components for the audit dashboard — NiceGUI version."""
 
+import asyncio
 import os
-import subprocess
 import sys
 
 from nicegui import app, ui
@@ -88,17 +88,12 @@ def _render_select_tab() -> None:
 
 def _render_create_tab() -> None:
     name_input = ui.input(label="Nome Audit").classes("w-full q-mb-md")
-    log_area = ui.textarea(label="Log ingest").classes("w-full").props("readonly").set_visibility(False)
 
     async def start_ingest():
         nome = (name_input.value or "").strip()
         if not nome:
             ui.notify("Il nome dell'audit è obbligatorio.", type="warning")
             return
-
-        log_area.set_visibility(True)
-        log_area.set_value("")
-        log = []
 
         # Create directories
         try:
@@ -107,41 +102,60 @@ def _render_create_tab() -> None:
             ui.notify(str(exc), type="negative")
             return
 
-        # Run ingest script
+        # Floating log dialog
+        with ui.dialog().props("persistent") as dialog, ui.card().classes("w-[600px]"):
+            ui.label(f"Ingest — {nome}").classes("text-h6")
+            log_area = ui.log().classes("w-full h-[300px]")
+            close_btn = ui.button("Chiudi")
+            close_btn.set_visibility(False)
+
+        dialog.open()
+
+        # Run ingest script async
         ingest_script = "ingest/ingest.py"
         if not os.path.isfile(ingest_script):
-            log.append(f"[PLACEHOLDER] ingest.py non trovato – simulazione per '{nome}'.")
-            log_area.set_value("\n".join(log))
+            log_area.push(f"[PLACEHOLDER] ingest.py non trovato – simulazione per '{nome}'.")
         else:
             try:
-                proc = subprocess.Popen(
-                    [sys.executable, ingest_script, "--all", "--db", nome, "--project-dir", dir_path],
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    text=True,
+                proc = await asyncio.create_subprocess_exec(
+                    sys.executable, ingest_script,
+                    "--all", "--db", nome, "--project-dir", dir_path,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.STDOUT,
                 )
-                for line in proc.stdout:
-                    log.append(line.rstrip())
-                    log_area.set_value("\n".join(log))
-                proc.wait()
+                while True:
+                    line = await proc.stdout.readline()
+                    if not line:
+                        break
+                    log_area.push(line.decode().rstrip())
+                await proc.wait()
                 if proc.returncode != 0:
-                    ui.notify(f"Ingest terminato con codice {proc.returncode}.", type="negative")
+                    log_area.push(f"[ERRORE] Ingest terminato con codice {proc.returncode}.")
+                    close_btn.set_visibility(True)
                     return
             except Exception as exc:
-                ui.notify(f"Errore esecuzione ingest: {exc}", type="negative")
+                log_area.push(f"[ERRORE] {exc}")
+                close_btn.set_visibility(True)
                 return
 
         # Register and seed
         try:
             register_audit(nome, dir_path, db_path)
         except ValueError as exc:
-            ui.notify(str(exc), type="negative")
+            log_area.push(f"[ERRORE] {exc}")
+            close_btn.set_visibility(True)
             return
 
         seed_placeholder_data(db_path)
-        ui.notify(f"Audit '{nome}' creato con successo!", type="positive")
-        app.storage.user["active_audit"] = nome
-        ui.navigate.to("/")
+        log_area.push(f"[OK] Audit '{nome}' creato con successo!")
+        close_btn.set_visibility(True)
+
+        async def finish():
+            app.storage.user["active_audit"] = nome
+            dialog.close()
+            ui.navigate.to("/")
+
+        close_btn.on_click(finish)
 
     ui.button("Avvia Ingest", on_click=start_ingest).props("color=primary")
 
