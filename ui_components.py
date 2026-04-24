@@ -1,8 +1,10 @@
 """Reusable UI components for the audit dashboard — NiceGUI version."""
 
-import asyncio
 import os
+import queue
+import subprocess
 import sys
+import threading
 
 from nicegui import app, ui
 
@@ -118,60 +120,83 @@ def _render_create_tab() -> None:
             close_btn.set_visibility(True)
             return
 
-        # Run ingest script
+        # Run ingest script in a background thread
         ingest_script = os.path.join(os.path.dirname(__file__), "ingest", "ingest.py")
         cmd = [sys.executable, "-u", ingest_script, "--all", "--db", nome, "--project-dir", dir_path]
-        log_area.push(f"[DEBUG] comando: {' '.join(cmd)}")
+        log_area.push(f"[INGEST] comando: {' '.join(cmd)}")
 
-        try:
-            import subprocess
-            proc = subprocess.Popen(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-            )
-            while True:
-                line = proc.stdout.readline()
-                if not line:
+        log_queue: queue.Queue = queue.Queue()
+
+        def run_ingest():
+            try:
+                proc = subprocess.Popen(
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                )
+                for line in proc.stdout:
+                    log_queue.put(line.rstrip())
+                proc.wait()
+                log_queue.put(("RETURN_CODE", proc.returncode))
+            except Exception as exc:
+                log_queue.put(("ERROR", str(exc)))
+
+        thread = threading.Thread(target=run_ingest, daemon=True)
+        thread.start()
+
+        # Poll the queue and update log in real-time
+        def poll():
+            drained = False
+            while not log_queue.empty():
+                item = log_queue.get_nowait()
+                if isinstance(item, tuple):
+                    tag, value = item
+                    if tag == "RETURN_CODE":
+                        timer.off()
+                        if value != 0:
+                            log_area.push(f"[ERRORE] Ingest terminato con codice {value}.")
+                            close_btn.set_visibility(True)
+                        else:
+                            _finish_ingest(nome, dir_path, db_path, log_area, close_btn, dialog)
+                    elif tag == "ERROR":
+                        timer.off()
+                        log_area.push(f"[ERRORE] {value}")
+                        close_btn.set_visibility(True)
+                    drained = True
                     break
-                log_area.push(line.rstrip())
-                await asyncio.sleep(0)  # yield to event loop
-            proc.wait()
-            if proc.returncode != 0:
-                log_area.push(f"[ERRORE] Ingest terminato con codice {proc.returncode}.")
-                close_btn.set_visibility(True)
-                return
-        except Exception as exc:
-            import traceback
-            log_area.push(f"[ERRORE] Esecuzione ingest: {exc}")
-            for tb_line in traceback.format_exc().splitlines():
-                log_area.push(tb_line)
-            close_btn.set_visibility(True)
-            return
+                else:
+                    log_area.push(item)
+            if not drained:
+                # Keep polling
+                pass
 
-        # Register and seed
-        try:
-            register_audit(nome, dir_path, db_path)
-            log_area.push(f"[OK] Audit registrato nel master DB.")
-        except ValueError as exc:
-            log_area.push(f"[ERRORE] {exc}")
-            close_btn.set_visibility(True)
-            return
-
-        seed_placeholder_data(db_path)
-        log_area.push(f"[OK] Audit '{nome}' creato con successo!")
-
-        app.storage.user["active_audit"] = nome
-        close_btn.set_visibility(True)
-
-        async def finish():
-            dialog.close()
-            ui.navigate.to("/")
-
-        close_btn.on_click(finish)
+        timer = ui.timer(0.2, poll)
 
     ui.button("Avvia Ingest", on_click=start_ingest).props("color=primary")
+
+
+def _finish_ingest(nome, dir_path, db_path, log_area, close_btn, dialog):
+    """Register audit in master DB, seed data, and show close button."""
+    try:
+        register_audit(nome, dir_path, db_path)
+        log_area.push(f"[OK] Audit registrato nel master DB.")
+    except ValueError as exc:
+        log_area.push(f"[ERRORE] {exc}")
+        close_btn.set_visibility(True)
+        return
+
+    seed_placeholder_data(db_path)
+    log_area.push(f"[OK] Audit '{nome}' creato con successo!")
+
+    app.storage.user["active_audit"] = nome
+    close_btn.set_visibility(True)
+
+    async def finish():
+        dialog.close()
+        ui.navigate.to("/")
+
+    close_btn.on_click(finish)
 
 
 # ── Data page (Applications / Servers) ────────────────────────────────────
