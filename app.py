@@ -13,9 +13,9 @@ def layout(active_tab: str, content_fn):
     with ui.left_drawer(bordered=True).classes("q-pa-md"):
         render_sidebar()
 
-    # ── Right drawer for filters (populated by page content_fn) ────────
-    app.storage.user["_filter_drawer"] = ui.right_drawer(bordered=True).classes("q-pa-md")
-    app.storage.user["_filter_drawer"].set_visibility(False)
+    # ── Right drawer for filters ───────────────────────────────────────
+    filter_drawer = ui.right_drawer(bordered=True).classes("q-pa-md")
+    filter_drawer.set_visibility(False)
 
     # ── Top navigation tabs ────────────────────────────────────────────
     with ui.header().classes("items-center justify-start gap-4 q-px-md"):
@@ -38,7 +38,7 @@ def layout(active_tab: str, content_fn):
 
     # ── Page content ───────────────────────────────────────────────────
     with ui.column().classes("w-full q-pa-lg"):
-        content_fn()
+        content_fn(filter_drawer)
 
 
 # ── Routes ─────────────────────────────────────────────────────────────────

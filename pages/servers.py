@@ -6,7 +6,7 @@ from db_manager import get_audit_db_path, get_all_findings
 from ui_components import render_data_table, render_filters_drawer
 
 
-def render_servers():
+def render_servers(filter_drawer=None):
     audit_name = app.storage.user.get("active_audit")
 
     if not audit_name:
@@ -28,5 +28,7 @@ def render_servers():
         return
 
     table_container = ui.column().classes("w-full")
-    render_filters_drawer(data, table_container)
-    render_data_table(table_container, data)
+    table = render_data_table(table_container, data)
+
+    if filter_drawer:
+        render_filters_drawer(filter_drawer, data, table)

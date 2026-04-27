@@ -8,7 +8,9 @@ from db_manager import get_audit_db_path
 from ui_components import render_data_table
 
 
-def render_sql():
+def render_sql(filter_drawer=None):
+    if filter_drawer:
+        filter_drawer.set_visibility(False)
     audit_name = app.storage.user.get("active_audit")
 
     if not audit_name:

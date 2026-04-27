@@ -198,13 +198,13 @@ def _finish_ingest(nome, dir_path, db_path, log_area, close_btn, dialog):
 
 # ── Shared table renderer ─────────────────────────────────────────────────
 
-def render_data_table(container: ui.column, data: list[dict]) -> None:
-    """Render a paginated ui.table inside the given container."""
+def render_data_table(container: ui.column, data: list[dict]):
+    """Render a paginated ui.table inside the given container. Returns the table."""
     container.clear()
     if not data:
         with container:
             ui.label("Nessun dato.").classes("text-grey")
-        return
+        return None
 
     columns = [
         {"name": k, "label": k, "field": k, "sortable": True}
@@ -212,27 +212,25 @@ def render_data_table(container: ui.column, data: list[dict]) -> None:
     ]
 
     with container:
-        ui.table(
+        table = ui.table(
             columns=columns,
             rows=data,
             pagination=20,
         ).classes("w-full")
+    return table
 
 
 # ── Right drawer filters ──────────────────────────────────────────────────
 
-def render_filters_drawer(data: list[dict], table_container: ui.column) -> None:
+def render_filters_drawer(drawer, data: list[dict], table) -> None:
     """Render DORA_RELEVANCE and GDPR_RELEVANCE filters in the right drawer."""
     filter_cols = ["DORA_RELEVANCE", "GDPR_RELEVANCE"]
     available = [c for c in filter_cols if data and c in data[0]]
 
-    drawer = app.storage.user.get("_filter_drawer")
-    if not available or not drawer:
-        if drawer:
-            drawer.set_visibility(False)
+    if not available or not table:
+        drawer.set_visibility(False)
         return
 
-    # Collect unique values per filter column
     filter_values = {}
     for col in available:
         filter_values[col] = sorted(set(str(r[col]) for r in data))
@@ -258,7 +256,7 @@ def render_filters_drawer(data: list[dict], table_container: ui.column) -> None:
                 selected = sel.value or []
                 if selected and selected != filter_values[col]:
                     filtered = [r for r in filtered if str(r[col]) in selected]
-            render_data_table(table_container, filtered)
+            table.update_rows(filtered)
 
         for sel in selects.values():
             sel.on("update:model-value", update_table)
