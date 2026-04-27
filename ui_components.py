@@ -226,7 +226,7 @@ def render_data_table(container: ui.column, data: list[dict]):
             row_key="id",
         ).classes("w-full").style("overflow: auto")
         table.props("flat bordered dense virtual-scroll sticky-header")
-        table.style("max-height", "70vh")
+        table.style("max-height: 70vh")
 
     def on_row_click(e):
         row_id = e.args.get("id")
