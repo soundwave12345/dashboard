@@ -223,16 +223,17 @@ def render_data_table(container: ui.column, data: list[dict]):
             columns=columns,
             rows=data,
             pagination=20,
-            row_key="id",
         ).classes("w-full").style("overflow: auto")
-        table.props("flat bordered dense virtual-scroll sticky-header")
+        table.props("flat bordered dense virtual-scroll")
         table.style("max-height: 70vh")
 
     def on_row_click(e):
-        row_id = e.args.get("id")
-        row = next((r for r in data if str(r.get("id")) == str(row_id)), None)
-        if row:
-            _open_row_detail(row)
+        try:
+            row_index = e.args[0] if isinstance(e.args, list) else None
+        except (IndexError, TypeError):
+            row_index = None
+        if row_index is not None and 0 <= row_index < len(data):
+            _open_row_detail(data[row_index])
 
     table.on("rowClick", on_row_click)
 
