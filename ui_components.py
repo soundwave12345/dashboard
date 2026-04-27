@@ -198,6 +198,13 @@ def _finish_ingest(nome, dir_path, db_path, log_area, close_btn, dialog):
 
 # ── Shared table renderer ─────────────────────────────────────────────────
 
+def render_skeleton(container: ui.column) -> None:
+    """Show skeleton placeholders inside the container."""
+    with container:
+        for _ in range(8):
+            ui.skeleton().classes("w-full q-mb-sm")
+
+
 def render_data_table(container: ui.column, data: list[dict]):
     """Render a paginated ui.table inside the given container. Returns the table."""
     container.clear()

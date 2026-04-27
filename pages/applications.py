@@ -1,9 +1,11 @@
-"""Applications page — data table with DORA/GDPR relevance filters."""
+"""Applications page — async data table with DORA/GDPR relevance filters."""
+
+import asyncio
 
 from nicegui import app, ui
 
 from db_manager import get_audit_db_path, get_all_findings
-from ui_components import render_data_table, render_filters_drawer
+from ui_components import render_data_table, render_filters_drawer, render_skeleton
 
 
 def render_applications(filter_drawer=None):
@@ -22,13 +24,27 @@ def render_applications(filter_drawer=None):
 
     ui.label(f"Applications — {audit_name}").classes("text-h4 q-mb-md")
 
-    data = get_all_findings(db_path)
-    if not data:
-        ui.label("Nessun dato disponibile nel database.").classes("text-grey")
-        return
-
+    # Show skeleton immediately
     table_container = ui.column().classes("w-full")
-    table = render_data_table(table_container, data)
+    render_skeleton(table_container)
 
     if filter_drawer:
-        render_filters_drawer(filter_drawer, data, table)
+        filter_drawer.set_visibility(False)
+
+    # Load data asynchronously
+    async def load_data():
+        data = await asyncio.to_thread(get_all_findings, db_path)
+
+        if not data:
+            table_container.clear()
+            with table_container:
+                ui.label("Nessun dato disponibile nel database.").classes("text-grey")
+            return
+
+        table_container.clear()
+        table = render_data_table(table_container, data)
+
+        if filter_drawer and table:
+            render_filters_drawer(filter_drawer, data, table)
+
+    ui.timer(0, load_data, once=True)
