@@ -226,10 +226,8 @@ def render_data_table(container: ui.column, data: list[dict]):
             row_key="id",
         ).classes("w-full").style("overflow: auto")
         table.props("flat bordered")
-        table.style(
-            "tbody tr:nth-child(even) { background-color: #f5f5f5; }"
-            "tbody tr:nth-child(odd) { background-color: #ffffff; }"
-        )
+        table.style("tbody tr:nth-child(even)", "background-color: #f5f5f5")
+        table.style("tbody tr:nth-child(odd)", "background-color: #ffffff")
 
     def on_row_click(e):
         row_id = e.args.get("id")
