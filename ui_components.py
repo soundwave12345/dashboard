@@ -222,11 +222,14 @@ def render_data_table(container: ui.column, data: list[dict]) -> None:
 # ── Right drawer filters ──────────────────────────────────────────────────
 
 def render_filters_drawer(data: list[dict], table_container: ui.column) -> None:
-    """Render DORA_RELEVANCE and GDPR_RELEVANCE filters in a right drawer."""
+    """Render DORA_RELEVANCE and GDPR_RELEVANCE filters in the right drawer."""
     filter_cols = ["DORA_RELEVANCE", "GDPR_RELEVANCE"]
     available = [c for c in filter_cols if data and c in data[0]]
 
-    if not available:
+    drawer = app.storage.user.get("_filter_drawer")
+    if not available or not drawer:
+        if drawer:
+            drawer.set_visibility(False)
         return
 
     # Collect unique values per filter column
@@ -234,7 +237,10 @@ def render_filters_drawer(data: list[dict], table_container: ui.column) -> None:
     for col in available:
         filter_values[col] = sorted(set(str(r[col]) for r in data))
 
-    with ui.right_drawer(bordered=True).classes("q-pa-md"):
+    drawer.clear()
+    drawer.set_visibility(True)
+
+    with drawer:
         ui.label("Filtri").classes("text-h6 q-mb-md")
         selects = {}
         for col in available:

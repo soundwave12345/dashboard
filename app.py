@@ -8,10 +8,14 @@ from ui_components import render_sidebar
 # ── Shared layout ──────────────────────────────────────────────────────────
 
 def layout(active_tab: str, content_fn):
-    """Shared layout: sidebar + top nav + page content."""
-    # ── Sidebar ────────────────────────────────────────────────────────
+    """Shared layout: sidebar + top nav + right drawer + page content."""
+    # ── Left sidebar ───────────────────────────────────────────────────
     with ui.left_drawer(bordered=True).classes("q-pa-md"):
         render_sidebar()
+
+    # ── Right drawer for filters (populated by page content_fn) ────────
+    app.storage.user["_filter_drawer"] = ui.right_drawer(bordered=True).classes("q-pa-md")
+    app.storage.user["_filter_drawer"].set_visibility(False)
 
     # ── Top navigation tabs ────────────────────────────────────────────
     with ui.header().classes("items-center justify-start gap-4 q-px-md"):
