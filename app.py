@@ -34,6 +34,8 @@ def layout(active_tab: str, content_fn):
                 ui.button("SQL", on_click=lambda: ui.navigate.to("/sql")).props(
                     f"flat {'color=primary' if active_tab == 'SQL' else 'color=grey'}"
                 )
+        ui.space()
+        ui.button(icon="menu", on_click=filter_drawer.toggle).props("flat dense").tooltip("Filtri")
 
     # ── Page content ───────────────────────────────────────────────────
     with ui.column().classes("w-full q-pa-lg"):

@@ -28,9 +28,6 @@ def render_servers(filter_drawer=None):
     table_container = ui.column().classes("w-full")
     render_skeleton(table_container)
 
-    if filter_drawer:
-        filter_drawer.hide()
-
     # Load data asynchronously
     async def load_data():
         data = await asyncio.to_thread(get_all_findings, db_path)
