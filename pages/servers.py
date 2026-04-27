@@ -29,7 +29,7 @@ def render_servers(filter_drawer=None):
     render_skeleton(table_container)
 
     if filter_drawer:
-        filter_drawer.set_visibility(False)
+        filter_drawer.hide()
 
     # Load data asynchronously
     async def load_data():
