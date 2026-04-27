@@ -13,8 +13,9 @@ def layout(active_tab: str, content_fn):
     with ui.left_drawer(bordered=True).classes("q-pa-md"):
         render_sidebar()
 
-    # ── Right drawer for filters (hidden by default) ───────────────────
-    filter_drawer = ui.right_drawer(bordered=True).classes("q-pa-md hidden")
+    # ── Right drawer for filters (hidden by default, no space) ──────────
+    filter_drawer = ui.right_drawer(bordered=True).classes("q-pa-md")
+    filter_drawer.style("display: none")
 
     # ── Top navigation tabs ────────────────────────────────────────────
     with ui.header().classes("items-center justify-start gap-4 q-px-md"):

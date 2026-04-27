@@ -223,7 +223,7 @@ def render_data_table(container: ui.column, data: list[dict]):
             columns=columns,
             rows=data,
             pagination=20,
-        ).classes("w-full")
+        ).classes("w-full").style("overflow: auto")
     return table
 
 
@@ -243,8 +243,7 @@ def render_filters_drawer(drawer, data: list[dict], table, filter_cols_str: str 
         filter_values[col] = sorted(set(str(r[col]) for r in data))
 
     drawer.clear()
-    drawer.classes(remove="hidden")
-    drawer.set_visibility(True)
+    drawer.style("display: ''")
 
     with drawer:
         ui.label("Filtri").classes("text-h6 q-mb-md")
