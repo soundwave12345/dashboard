@@ -206,7 +206,7 @@ def render_skeleton(container: ui.column) -> None:
 
 
 def render_data_table(container: ui.column, data: list[dict]):
-    """Render a paginated ui.table inside the given container. Returns the table."""
+    """Render a paginated ui.table with alternating row colors and row-click detail dialog."""
     container.clear()
     if not data:
         with container:
@@ -223,8 +223,64 @@ def render_data_table(container: ui.column, data: list[dict]):
             columns=columns,
             rows=data,
             pagination=20,
+            row_key="id",
         ).classes("w-full").style("overflow: auto")
+        table.props("flat bordered")
+        table.style(
+            "tbody tr:nth-child(even) { background-color: #f5f5f5; }"
+            "tbody tr:nth-child(odd) { background-color: #ffffff; }"
+        )
+
+    def on_row_click(e):
+        row_id = e.args.get("id")
+        row = next((r for r in data if str(r.get("id")) == str(row_id)), None)
+        if row:
+            _open_row_detail(row)
+
+    table.on("rowClick", on_row_click)
+
     return table
+
+
+def _open_row_detail(row: dict) -> None:
+    """Open a full-screen dialog showing row details in two columns across 3 tabs."""
+    with ui.dialog().props("maximized") as dialog, ui.card().classes("w-full h-full"):
+        with ui.tabs().classes("w-full") as tabs:
+            ui.tab("info", label="Info")
+            ui.tab("server", label="Server")
+            ui.tab("legal", label="Legal Entities")
+
+        with ui.tab_panels(tabs, value="info").classes("w-full flex-1"):
+            # ── Info tab ────────────────────────────────────────────
+            with ui.tab_panel("info"):
+                fields = list(row.items())
+                mid = (len(fields) + 1) // 2
+                left = fields[:mid]
+                right = fields[mid:]
+
+                with ui.row().classes("w-full gap-8"):
+                    with ui.column().classes("flex-1"):
+                        for k, v in left:
+                            with ui.row().classes("w-full items-baseline gap-2"):
+                                ui.label(f"{k}:").classes("text-weight-bold text-caption")
+                                ui.label(str(v) if v is not None else "").classes("text-body2")
+                    with ui.column().classes("flex-1"):
+                        for k, v in right:
+                            with ui.row().classes("w-full items-baseline gap-2"):
+                                ui.label(f"{k}:").classes("text-weight-bold text-caption")
+                                ui.label(str(v) if v is not None else "").classes("text-body2")
+
+            # ── Server tab (placeholder) ─────────────────────────────
+            with ui.tab_panel("server"):
+                ui.label("Dati server non disponibili.").classes("text-grey")
+
+            # ── Legal Entities tab (placeholder) ─────────────────────
+            with ui.tab_panel("legal"):
+                ui.label("Dati legal entities non disponibili.").classes("text-grey")
+
+        ui.button("Chiudi", on_click=dialog.close).props("flat").classes("self-end")
+
+    dialog.open()
 
 
 # ── Right drawer filters ──────────────────────────────────────────────────
