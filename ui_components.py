@@ -229,11 +229,11 @@ def render_data_table(container: ui.column, data: list[dict]):
 
     def on_row_click(e):
         try:
-            row_index = e.args[0] if isinstance(e.args, list) else None
+            row = e.args if isinstance(e.args, dict) else e.args[0]
         except (IndexError, TypeError):
-            row_index = None
-        if row_index is not None and 0 <= row_index < len(data):
-            _open_row_detail(data[row_index])
+            return
+        if isinstance(row, dict):
+            _open_row_detail(row)
 
     table.on("rowClick", on_row_click)
 
