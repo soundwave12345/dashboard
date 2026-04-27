@@ -228,11 +228,13 @@ def render_data_table(container: ui.column, data: list[dict]):
         table.style("max-height: 70vh")
 
     def on_row_click(e):
-        try:
-            row = e.args if isinstance(e.args, dict) else e.args[0]
-        except (IndexError, TypeError):
-            return
-        if isinstance(row, dict):
+        # Debug: show what e.args contains
+        ui.notify(f"type={type(e.args).__name__} keys={list(e.args.keys()) if isinstance(e.args, dict) else 'N/A'}")
+        row = None
+        if isinstance(e.args, dict):
+            # Try common Quasar row-click structures
+            row = e.args.get("row") or e.args.get("rows") or e.args
+        if row:
             _open_row_detail(row)
 
     table.on("rowClick", on_row_click)
