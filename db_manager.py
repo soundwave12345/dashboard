@@ -114,49 +114,6 @@ def get_audit_db_path(nome_audit: str) -> Optional[str]:
         conn.close()
 
 
-# ── Helpers for placeholder data ──────────────────────────────────────────
-
-def seed_placeholder_data(db_path: str) -> None:
-    """Insert sample findings so the pie charts have something to show."""
-    conn = sqlite3.connect(db_path)
-    cur = conn.cursor()
-
-    count = cur.execute("SELECT COUNT(*) FROM findings").fetchone()[0]
-    if count > 0:
-        conn.close()
-        return
-
-    samples = [
-        ("Access Control", "High", "Admin panel exposed without auth"),
-        ("Access Control", "Medium", "Stale service account found"),
-        ("Cryptography", "High", "TLS 1.0 still enabled"),
-        ("Cryptography", "Low", "Self-signed cert in staging"),
-        ("Data Protection", "High", "PII stored unencrypted"),
-        ("Data Protection", "Medium", "Backup retention too long"),
-        ("Network", "Medium", "Unnecessary port 22 open"),
-        ("Network", "Low", "ICMP flood not rate-limited"),
-        ("Compliance", "Low", "Policy doc outdated"),
-        ("Compliance", "Medium", "Missing audit log for deletes"),
-    ]
-    cur.executemany(
-        "INSERT INTO findings (category, severity, description) VALUES (?, ?, ?)",
-        samples,
-    )
-    conn.commit()
-    conn.close()
-
-
-def get_findings_by_category(db_path: str) -> list[dict]:
-    """Return (category, count) pairs."""
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
-    rows = conn.execute(
-        "SELECT category, COUNT(*) as count FROM findings GROUP BY category"
-    ).fetchall()
-    conn.close()
-    return [dict(r) for r in rows]
-
-
 def get_all_findings(db_path: str) -> list[dict]:
     """Return all rows from the findings table."""
     conn = sqlite3.connect(db_path)

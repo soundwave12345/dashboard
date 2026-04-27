@@ -14,7 +14,6 @@ from db_manager import (
     get_audit_db_path,
     list_audits,
     register_audit,
-    seed_placeholder_data,
 )
 
 
@@ -177,7 +176,7 @@ def _render_create_tab() -> None:
 
 
 def _finish_ingest(nome, dir_path, db_path, log_area, close_btn, dialog):
-    """Register audit in master DB, seed data, and show close button."""
+    """Register audit in master DB and show close button."""
     try:
         register_audit(nome, dir_path, db_path)
         log_area.push(f"[OK] Audit registrato nel master DB.")
@@ -186,7 +185,6 @@ def _finish_ingest(nome, dir_path, db_path, log_area, close_btn, dialog):
         close_btn.set_visibility(True)
         return
 
-    seed_placeholder_data(db_path)
     log_area.push(f"[OK] Audit '{nome}' creato con successo!")
 
     app.storage.user["active_audit"] = nome
@@ -250,7 +248,7 @@ def render_data_page(page_name: str) -> None:
 
 
 def _render_table(container: ui.column, data: list[dict]) -> None:
-    """Render an ag-grid table inside the given container."""
+    """Render a paginated ui.table inside the given container."""
     container.clear()
     if not data:
         with container:
@@ -258,13 +256,13 @@ def _render_table(container: ui.column, data: list[dict]) -> None:
         return
 
     columns = [
-        {"headerName": k, "field": k, "filter": True, "sortable": True}
+        {"name": k, "label": k, "field": k, "sortable": True}
         for k in data[0].keys()
     ]
-    rows = data
 
     with container:
-        ui.aggrid(
-            {"columnDefs": columns, "rowData": rows, "defaultColDef": {"flex": 1}},
-            theme="balham",
-        ).classes("h-[60vh]")
+        ui.table(
+            columns=columns,
+            rows=data,
+            pagination=20,
+        ).classes("w-full")
