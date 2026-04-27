@@ -229,9 +229,9 @@ def render_data_table(container: ui.column, data: list[dict]):
 
 # ── Right drawer filters ──────────────────────────────────────────────────
 
-def render_filters_drawer(drawer, data: list[dict], table) -> None:
-    """Render DORA_RELEVANCE and GDPR_RELEVANCE filters in the right drawer."""
-    filter_cols = ["DORA_RELEVANCE", "GDPR_RELEVANCE"]
+def render_filters_drawer(drawer, data: list[dict], table, filter_cols_str: str = "DORA_RELEVANCE,GDPR_RELEVANCE") -> None:
+    """Render filters in the right drawer based on comma-separated column names."""
+    filter_cols = [c.strip() for c in filter_cols_str.split(",") if c.strip()]
     available = [c for c in filter_cols if data and c in data[0]]
 
     if not available or not table:
