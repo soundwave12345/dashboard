@@ -205,8 +205,8 @@ def render_skeleton(container: ui.column) -> None:
             ui.skeleton().classes("w-full q-mb-sm")
 
 
-def render_data_table(container: ui.column, data: list[dict]):
-    """Render a paginated ui.table with alternating row colors and row-click detail dialog."""
+def render_data_table(container: ui.column, data: list[dict], db_path: str = None):
+    """Render a paginated ui.table with detail button per row."""
     container.clear()
     if not data:
         with container:
@@ -227,22 +227,33 @@ def render_data_table(container: ui.column, data: list[dict]):
         table.props("flat bordered dense virtual-scroll")
         table.style("max-height: 70vh")
 
-    def on_row_click(e):
-        # Debug: show what e.args contains
-        ui.notify(f"type={type(e.args).__name__} keys={list(e.args.keys()) if isinstance(e.args, dict) else 'N/A'}")
-        row = None
-        if isinstance(e.args, dict):
-            # Try common Quasar row-click structures
-            row = e.args.get("row") or e.args.get("rows") or e.args
-        if row:
-            _open_row_detail(row)
+    # Store db_path for row detail queries
+    table._db_path = db_path
 
-    table.on("rowClick", on_row_click)
+    table.on("rowClick", lambda e: _on_row_click(e, data, db_path))
 
     return table
 
 
-def _open_row_detail(row: dict) -> None:
+def _on_row_click(e, data: list[dict], db_path: str) -> None:
+    """Handle row click: find APPLICATION_ID and open detail dialog."""
+    # Quasar row-click passes row data in e.args
+    app_id = None
+    if isinstance(e.args, dict) and "APPLICATION_ID" in e.args:
+        app_id = e.args["APPLICATION_ID"]
+    elif isinstance(e.args, (list, tuple)) and len(e.args) >= 2 and isinstance(e.args[1], dict):
+        app_id = e.args[1].get("APPLICATION_ID")
+
+    if not app_id:
+        return
+
+    # Find row in local data
+    row = next((r for r in data if str(r.get("APPLICATION_ID")) == str(app_id)), None)
+    if row:
+        _open_row_detail(row, app_id, db_path)
+
+
+def _open_row_detail(row: dict, app_id, db_path: str = None) -> None:
     """Open a full-screen dialog showing row details in two columns across 3 tabs."""
     with ui.dialog().props("maximized") as dialog, ui.card().classes("w-full h-full"):
         with ui.tabs().classes("w-full") as tabs:
@@ -250,7 +261,7 @@ def _open_row_detail(row: dict) -> None:
             ui.tab("server", label="Server")
             ui.tab("legal", label="Legal Entities")
 
-        with ui.tab_panels(tabs, value="info").classes("w-full flex-1"):
+        with ui.tab_panels(tabs, value="info").classes("w-full flex-1 overflow-auto"):
             # ── Info tab ────────────────────────────────────────────
             with ui.tab_panel("info"):
                 fields = list(row.items())

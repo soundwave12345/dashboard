@@ -39,7 +39,7 @@ def render_servers(filter_drawer=None):
             return
 
         table_container.clear()
-        table = render_data_table(table_container, data)
+        table = render_data_table(table_container, data, db_path)
 
         if filter_drawer and table:
             render_filters_drawer(filter_drawer, data, table)
