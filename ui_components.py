@@ -217,3 +217,42 @@ def render_data_table(container: ui.column, data: list[dict]) -> None:
             rows=data,
             pagination=20,
         ).classes("w-full")
+
+
+# ── Right drawer filters ──────────────────────────────────────────────────
+
+def render_filters_drawer(data: list[dict], table_container: ui.column) -> None:
+    """Render DORA_RELEVANCE and GDPR_RELEVANCE filters in a right drawer."""
+    filter_cols = ["DORA_RELEVANCE", "GDPR_RELEVANCE"]
+    available = [c for c in filter_cols if data and c in data[0]]
+
+    if not available:
+        return
+
+    # Collect unique values per filter column
+    filter_values = {}
+    for col in available:
+        filter_values[col] = sorted(set(str(r[col]) for r in data))
+
+    with ui.right_drawer(bordered=True).classes("q-pa-md"):
+        ui.label("Filtri").classes("text-h6 q-mb-md")
+        selects = {}
+        for col in available:
+            sel = ui.select(
+                options=filter_values[col],
+                multiple=True,
+                value=filter_values[col],
+                label=f"Filtra per {col}",
+            ).classes("w-full q-mb-md")
+            selects[col] = sel
+
+        def update_table():
+            filtered = data
+            for col, sel in selects.items():
+                selected = sel.value or []
+                if selected and selected != filter_values[col]:
+                    filtered = [r for r in filtered if str(r[col]) in selected]
+            render_data_table(table_container, filtered)
+
+        for sel in selects.values():
+            sel.on("update:model-value", update_table)

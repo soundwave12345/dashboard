@@ -1,9 +1,9 @@
-"""Applications page — data table with DORA_RELEVANCE filter."""
+"""Applications page — data table with DORA/GDPR relevance filters."""
 
 from nicegui import app, ui
 
 from db_manager import get_audit_db_path, get_all_findings
-from ui_components import render_data_table
+from ui_components import render_data_table, render_filters_drawer
 
 
 def render_applications():
@@ -27,26 +27,6 @@ def render_applications():
         ui.label("Nessun dato disponibile nel database.").classes("text-grey")
         return
 
-    # DORA_RELEVANCE filter
-    if "DORA_RELEVANCE" in data[0]:
-        dora_unique = sorted(set(str(r["DORA_RELEVANCE"]) for r in data))
-
-        filter_select = ui.select(
-            options=dora_unique,
-            multiple=True,
-            value=dora_unique,
-            label="Filtra per DORA_RELEVANCE",
-        ).classes("w-full q-mb-md")
-
-        table_container = ui.column().classes("w-full")
-
-        def update_table():
-            selected = filter_select.value or []
-            filtered = [r for r in data if str(r["DORA_RELEVANCE"]) in selected] if selected else data
-            render_data_table(table_container, filtered)
-
-        filter_select.on("update:model-value", update_table)
-        update_table()
-    else:
-        with ui.column().classes("w-full") as table_container:
-            render_data_table(table_container, data)
+    table_container = ui.column().classes("w-full")
+    render_filters_drawer(data, table_container)
+    render_data_table(table_container, data)
