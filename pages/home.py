@@ -10,7 +10,8 @@ from ui_components import render_selection_view
 
 def render_home(filter_drawer=None):
     if filter_drawer:
-        filter_drawer.set_visibility(False)
+        filter_drawer.visible = False
+        filter_drawer.classes(remove="w-[300px]")
     audit_name = app.storage.user.get("active_audit")
 
     if audit_name:

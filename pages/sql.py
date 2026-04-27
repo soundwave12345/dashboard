@@ -25,7 +25,8 @@ def _get_db_schema(db_path: str) -> dict[str, list[str]]:
 
 def render_sql(filter_drawer=None):
     if filter_drawer:
-        filter_drawer.set_visibility(False)
+        filter_drawer.visible = False
+        filter_drawer.classes(remove="w-[300px]")
     audit_name = app.storage.user.get("active_audit")
 
     if not audit_name:
@@ -44,10 +45,20 @@ def render_sql(filter_drawer=None):
         ui.label(f"SQL — {audit_name}").classes("text-h4")
         ui.button("Esegui Query", on_click=lambda: run_query()).props("color=primary")
 
-    # Schema tree + Code editor side by side
+    # Main content: editor+results on left, schema tree on right
     with ui.row().classes("w-full gap-4"):
 
-        # Left: DB schema tree
+        # Left: Code editor + results
+        with ui.column().classes("flex-1"):
+            editor = ui.codemirror(
+                value="SELECT * FROM findings LIMIT 100",
+                language="sql",
+            ).classes("w-full").props('style="height: 150px"')
+
+            error_label = ui.label("").classes("text-negative")
+            result_container = ui.column().classes("w-full")
+
+        # Right: DB schema tree
         with ui.card().classes("min-w-[250px]"):
             ui.label("Schema").classes("text-subtitle1 q-mb-sm")
             schema = _get_db_schema(db_path)
@@ -59,16 +70,6 @@ def render_sql(filter_drawer=None):
                     "children": [{"id": f"{table}.{c}", "label": c} for c in cols],
                 })
             ui.tree(tree_nodes).expand()
-
-        # Right: Code editor + results
-        with ui.column().classes("flex-1"):
-            editor = ui.codemirror(
-                value="SELECT * FROM findings LIMIT 100",
-                language="sql",
-            ).classes("w-full").props('style="height: 150px"')
-
-            error_label = ui.label("").classes("text-negative")
-            result_container = ui.column().classes("w-full")
 
     async def run_query():
         query = (editor.value or "").strip()

@@ -243,6 +243,7 @@ def render_filters_drawer(drawer, data: list[dict], table, filter_cols_str: str 
         filter_values[col] = sorted(set(str(r[col]) for r in data))
 
     drawer.clear()
+    drawer.classes(remove="hidden")
     drawer.set_visibility(True)
 
     with drawer:
