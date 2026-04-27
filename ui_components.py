@@ -242,11 +242,13 @@ def render_filters_drawer(drawer, data: list[dict], table) -> None:
         ui.label("Filtri").classes("text-h6 q-mb-md")
         inputs = {}
         for col in available:
-            inp = ui.input_chips(
+            sel = ui.select(
+                options=filter_values[col],
+                multiple=True,
                 value=filter_values[col],
                 label=f"Filtra per {col}",
-            ).classes("w-full q-mb-md")
-            inputs[col] = inp
+            ).classes("w-full q-mb-md").props("use-chips")
+            inputs[col] = sel
 
         def update_table():
             filtered = data
