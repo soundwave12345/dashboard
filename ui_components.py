@@ -2,6 +2,7 @@
 
 import os
 import queue
+import sqlite3
 import subprocess
 import sys
 import threading
@@ -254,7 +255,7 @@ def _on_row_click(e, data: list[dict], db_path: str) -> None:
 
 
 def _open_row_detail(row: dict, app_id, db_path: str = None) -> None:
-    """Open a full-screen dialog showing row details in two columns across 3 tabs."""
+    """Open a full-screen dialog with 3 tabs: Info (query), Server (table), Legal Entities (placeholder)."""
     with ui.dialog().props("maximized") as dialog, ui.card().classes("w-full h-full"):
         with ui.tabs().classes("w-full") as tabs:
             ui.tab("info", label="Info")
@@ -262,9 +263,28 @@ def _open_row_detail(row: dict, app_id, db_path: str = None) -> None:
             ui.tab("legal", label="Legal Entities")
 
         with ui.tab_panels(tabs, value="info").classes("w-full flex-1 overflow-auto"):
-            # ── Info tab ────────────────────────────────────────────
+            # ── Info tab: query applications ────────────────────────
             with ui.tab_panel("info"):
-                fields = list(row.items())
+                if db_path:
+                    try:
+                        conn = sqlite3.connect(db_path)
+                        conn.row_factory = sqlite3.Row
+                        cur = conn.execute(
+                            "SELECT * FROM applications WHERE APPLICATION_ID = ?",
+                            (str(app_id),),
+                        )
+                        info_row = cur.fetchone()
+                        conn.close()
+
+                        if info_row:
+                            fields = list(dict(info_row).items())
+                        else:
+                            fields = list(row.items())
+                    except Exception:
+                        fields = list(row.items())
+                else:
+                    fields = list(row.items())
+
                 mid = (len(fields) + 1) // 2
                 left = fields[:mid]
                 right = fields[mid:]
@@ -281,9 +301,35 @@ def _open_row_detail(row: dict, app_id, db_path: str = None) -> None:
                                 ui.label(f"{k}:").classes("text-weight-bold text-caption")
                                 ui.label(str(v) if v is not None else "").classes("text-body2")
 
-            # ── Server tab (placeholder) ─────────────────────────────
+            # ── Server tab: query servers as table ───────────────────
             with ui.tab_panel("server"):
-                ui.label("Dati server non disponibili.").classes("text-grey")
+                if db_path:
+                    try:
+                        conn = sqlite3.connect(db_path)
+                        conn.row_factory = sqlite3.Row
+                        cur = conn.execute(
+                            "SELECT * FROM servers WHERE app = ?",
+                            (str(app_id),),
+                        )
+                        server_rows = [dict(r) for r in cur.fetchall()]
+                        conn.close()
+
+                        if server_rows:
+                            server_cols = [
+                                {"name": k, "label": k, "field": k, "sortable": True}
+                                for k in server_rows[0].keys()
+                            ]
+                            ui.table(
+                                columns=server_cols,
+                                rows=server_rows,
+                                pagination=20,
+                            ).props("flat bordered dense").classes("w-full")
+                        else:
+                            ui.label("Nessun server trovato per questa applicazione.").classes("text-grey")
+                    except Exception as exc:
+                        ui.label(f"Errore query: {exc}").classes("text-negative")
+                else:
+                    ui.label("Database non disponibile.").classes("text-grey")
 
             # ── Legal Entities tab (placeholder) ─────────────────────
             with ui.tab_panel("legal"):
