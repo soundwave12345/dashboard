@@ -243,7 +243,7 @@ def render_filters_drawer(drawer, data: list[dict], table, filter_cols_str: str 
         filter_values[col] = sorted(set(str(r[col]) for r in data))
 
     drawer.clear()
-    drawer.style("display: ''")
+    drawer.show()
 
     with drawer:
         ui.label("Filtri").classes("text-h6 q-mb-md")

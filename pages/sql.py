@@ -25,7 +25,7 @@ def _get_db_schema(db_path: str) -> dict[str, list[str]]:
 
 def render_sql(filter_drawer=None):
     if filter_drawer:
-        filter_drawer.style("display: none")
+        filter_drawer.hide()
     audit_name = app.storage.user.get("active_audit")
 
     if not audit_name:
