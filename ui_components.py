@@ -153,14 +153,14 @@ def _render_create_tab() -> None:
                 if isinstance(item, tuple):
                     tag, value = item
                     if tag == "RETURN_CODE":
-                        timer.off()
+                        timer.active = False
                         if value != 0:
                             log_area.push(f"[ERRORE] Ingest terminato con codice {value}.")
                             close_btn.set_visibility(True)
                         else:
                             _finish_ingest(nome, dir_path, db_path, log_area, close_btn, dialog)
                     elif tag == "ERROR":
-                        timer.off()
+                        timer.active = False
                         log_area.push(f"[ERRORE] {value}")
                         close_btn.set_visibility(True)
                     drained = True
