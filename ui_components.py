@@ -240,23 +240,21 @@ def render_filters_drawer(drawer, data: list[dict], table) -> None:
 
     with drawer:
         ui.label("Filtri").classes("text-h6 q-mb-md")
-        selects = {}
+        inputs = {}
         for col in available:
-            sel = ui.select(
-                options=filter_values[col],
-                multiple=True,
+            inp = ui.input_chips(
                 value=filter_values[col],
                 label=f"Filtra per {col}",
             ).classes("w-full q-mb-md")
-            selects[col] = sel
+            inputs[col] = inp
 
         def update_table():
             filtered = data
-            for col, sel in selects.items():
-                selected = sel.value or []
-                if selected and selected != filter_values[col]:
+            for col, inp in inputs.items():
+                selected = inp.value or []
+                if selected:
                     filtered = [r for r in filtered if str(r[col]) in selected]
             table.update_rows(filtered)
 
-        for sel in selects.values():
-            sel.on("update:model-value", update_table)
+        for inp in inputs.values():
+            inp.on("update:model-value", update_table)
